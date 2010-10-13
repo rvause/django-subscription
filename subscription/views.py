@@ -109,7 +109,7 @@ def subscription_detail(request, object_id, payment_method="standard"):
         form = None
     else:
         extra_args = {}
-        get_paypal_extra_args.send(sender=None, user=user, subscription=s, extra_args={})
+        get_paypal_extra_args.send(sender=None, user=request.user, subscription=s, extra_args={})
         form = _paypal_form(s, request.user,
                             upgrade_subscription=(us is not None) and (us.subscription<>s))
 
