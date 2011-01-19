@@ -5,7 +5,8 @@ from django.db import models
 from django.contrib import auth
 from django.utils.translation import ugettext as _, ungettext, ugettext_lazy
 
-from paypal.standard import ipn
+from paypal.standard.ipn.models import PayPalIPN
+from paypal.standard.ipn.signals import payment_was_flagged, payment_was_successful, subscription_eot, subscription_cancel, subscription_modify, subscription_signup
 
 import signals, utils
 
@@ -15,7 +16,7 @@ class Transaction(models.Model):
                                      null=True, blank=True, editable=False)
     user = models.ForeignKey(auth.models.User,
                              null=True, blank=True, editable=False)
-    ipn = models.ForeignKey(ipn.models.PayPalIPN,
+    ipn = models.ForeignKey(PayPalIPN,
                             null=True, blank=True, editable=False)
     event = models.CharField(max_length=100, editable=False)
     amount = models.DecimalField(max_digits=64, decimal_places=2,
@@ -310,7 +311,7 @@ def handle_payment_was_successful(sender, **kwargs):
                     event='unexpected payment', amount=sender.mc_gross
                     ).save()
         signals.event.send(s, ipn=sender, subscription=s, user=u, event='unexpected_payment')
-ipn.signals.payment_was_successful.connect(handle_payment_was_successful)
+payment_was_successful.connect(handle_payment_was_successful)
 
 def handle_payment_was_flagged(sender, **kwargs):
     us = _ipn_usersubscription(sender)
@@ -319,7 +320,7 @@ def handle_payment_was_flagged(sender, **kwargs):
                 event='payment flagged', amount=sender.mc_gross
                 ).save()
     signals.event.send(s, ipn=sender, subscription=s, user=u, event='flagged')
-ipn.signals.payment_was_flagged.connect(handle_payment_was_flagged)
+payment_was_flagged.connect(handle_payment_was_flagged)
 
 def handle_subscription_signup(sender, **kwargs):
     us = _ipn_usersubscription(sender)
@@ -358,7 +359,7 @@ def handle_subscription_signup(sender, **kwargs):
                     ).save()
         signals.event.send(s, ipn=sender, subscription=s, user=u,
                            event='unexpected_subscription')
-ipn.signals.subscription_signup.connect(handle_subscription_signup)
+subscription_signup.connect(handle_subscription_signup)
 
 def handle_subscription_cancel(sender, **kwargs):
     us = _ipn_usersubscription(sender)
@@ -385,8 +386,8 @@ def handle_subscription_cancel(sender, **kwargs):
                     event='unexpected cancel', amount=sender.mc_gross
                     ).save()
         signals.event.send(s, ipn=sender, subscription=s, user=u, event='unexpected_cancel')
-ipn.signals.subscription_cancel.connect(handle_subscription_cancel)
-ipn.signals.subscription_eot.connect(handle_subscription_cancel)
+subscription_cancel.connect(handle_subscription_cancel)
+subscription_eot.connect(handle_subscription_cancel)
 
 def handle_subscription_modify(sender, **kwargs):
     us = _ipn_usersubscription(sender)
@@ -418,4 +419,4 @@ def handle_subscription_modify(sender, **kwargs):
                     ).save()
         signals.event.send(s, ipn=sender, subscription=s, user=u,
                            event='unexpected_subscription_modify')
-ipn.signals.subscription_modify.connect(handle_subscription_modify)
+subscription_modify.connect(handle_subscription_modify)
