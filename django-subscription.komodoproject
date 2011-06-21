@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Komodo Project File - DO NOT EDIT -->
+<project id="2cdc1677-57bd-4663-8be4-c650f6446e6b" kpf_version="5" name="django-subscription.komodoproject">
+<preference-set idref="2cdc1677-57bd-4663-8be4-c650f6446e6b">
+  <boolean id="import_live">1</boolean>
+</preference-set>
+</project>

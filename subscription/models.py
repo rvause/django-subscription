@@ -1,6 +1,5 @@
 import datetime
 
-from django.conf import settings
 from django.db import models
 from django.contrib import auth
 from django.utils.translation import ugettext as _, ungettext, ugettext_lazy
@@ -8,7 +7,7 @@ from django.utils.translation import ugettext as _, ungettext, ugettext_lazy
 from paypal.standard.ipn.models import PayPalIPN
 from paypal.standard.ipn.signals import payment_was_flagged, payment_was_successful, subscription_eot, subscription_cancel, subscription_modify, subscription_signup
 
-import signals, utils
+import signals, utils, settings
 
 class Transaction(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, editable=False)
@@ -45,16 +44,17 @@ class Subscription(models.Model):
     name = models.CharField(max_length=100, unique=True, null=False)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=64, decimal_places=2)
+    
     trial_period = models.PositiveIntegerField(null=True, blank=True)
-    trial_unit = models.CharField(max_length=1, null=True,
-                                       choices = ((None, ugettext_lazy("No trial")),)
-                                       + _TIME_UNIT_CHOICES)
+    trial_unit = models.CharField(max_length=1, null=True, blank= True,
+                                       choices= _TIME_UNIT_CHOICES)
+    
     recurrence_period = models.PositiveIntegerField(null=True, blank=True)
-    recurrence_unit = models.CharField(max_length=1, null=True,
-                                       choices = ((None, ugettext_lazy("No recurrence")),)
-                                       + _TIME_UNIT_CHOICES)
+    recurrence_unit = models.CharField(max_length=1, null=True, blank= True,
+                                       choices = _TIME_UNIT_CHOICES)
+    
     group = models.ForeignKey(auth.models.Group, null=False, blank=False)
-
+    
     _PLURAL_UNITS = {
         'D': 'days',
         'W': 'weeks',
@@ -120,10 +120,10 @@ def __user_get_subscription(user):
 auth.models.User.add_to_class('get_subscription', __user_get_subscription)
 
 
-class ActiveUSManager(models.Manager):
-    """Custom Manager for UserSubscription that returns only live US objects."""
+class ActiveUserSubscriptionManager(models.Manager):
+    """Custom Manager for UserSubscription that returns only live user subscription objects."""
     def get_query_set(self):
-        return super(ActiveUSManager, self).get_query_set().filter(active=True)
+        return super(ActiveUserSubscriptionManager, self).get_query_set().filter(active=True)
 
 class UserSubscription(models.Model):
     user = models.ForeignKey(auth.models.User)
@@ -133,16 +133,15 @@ class UserSubscription(models.Model):
     cancelled = models.BooleanField(default=True)
 
     objects = models.Manager()
-    active_objects = ActiveUSManager()
+    active_objects = ActiveUserSubscriptionManager()
 
-    grace_timedelta = datetime.timedelta(
-        getattr(settings, 'SUBSCRIPTION_GRACE_PERIOD', 2))
+    grace_timedelta = datetime.timedelta(settings.SUBSCRIPTION_GRACE_PERIOD)
 
     class Meta:
         unique_together = ( ('user','subscription'), )
 
     def user_is_group_member(self):
-        "Returns True is user is member of subscription's group"
+        "Returns True is user if member of subscription's group"
         return self.subscription.group in self.user.groups.all()
     user_is_group_member.boolean = True
 
@@ -158,8 +157,10 @@ class UserSubscription(models.Model):
 
         Returns True if not expired and user is in group, or expired
         and user is not in group."""
-        if self.expired() or not self.active: return not self.user_is_group_member()
-        else: return self.user_is_group_member()
+        if self.expired() or not self.active:
+            return not self.user_is_group_member()
+        else:
+            return self.user_is_group_member()
     valid.boolean = True
 
     def unsubscribe(self):
