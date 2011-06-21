@@ -1,12 +1,28 @@
 from django.conf.urls.defaults import *
+from django.contrib.auth.decorators import permission_required
 
 import views
 
-urlpatterns = patterns('subscription.views',
-    (r'^$', 'subscription_list', {}, 'subscription_list'),
-    (r'^(?P<object_id>\d+)/$', 'subscription_detail', {}, 'subscription_detail'),
-    (r'^(?P<object_id>\d+)/(?P<payment_method>(standard|pro))$', 'subscription_detail', {}, 'subscription_detail'),
-    )
+urlpatterns = patterns('',
+    (
+        r'^$',
+        permission_required('subscription.can_view')(views.subscription_list),
+        {},
+        'subscription_list'
+    ),
+    (
+        r'^(?P<object_id>\d+)/$',
+        permission_required('subscription.can_view')(views.subscription_detail),
+        {},
+        'subscription_detail'
+    ),
+    (
+        r'^(?P<object_id>\d+)/(?P<payment_method>(standard|pro))$',
+        permission_required('subscription.can_view')(views.subscription_detail),
+        {},
+        'subscription_detail'
+    ),
+)
 
 urlpatterns += patterns('',
     (r'^paypal/', include('paypal.standard.ipn.urls')),
