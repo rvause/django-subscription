@@ -15,7 +15,10 @@ class Migration(SchemaMigration):
             pass
         
         # Changing field 'Subscription.group'
-        db.alter_column('subscription_subscription', 'group_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group']))
+        try:
+            db.alter_column('subscription_subscription', 'group_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group']))
+        except:
+            pass
         
     def backwards(self, orm):
         pass
