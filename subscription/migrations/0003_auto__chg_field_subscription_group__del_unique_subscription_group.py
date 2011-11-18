@@ -9,21 +9,17 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Removing unique constraint on 'subscription', fields ['group']
-        db.delete_unique('subscription_subscription', ['group_id'])
-
-        # Changing field 'Subscription.group'
-        db.alter_column('subscription_subscription', 'group_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group']))
-
-
-    def backwards(self, orm):
+        try:
+            db.delete_unique('subscription_subscription', ['group_id'])
+        except:
+            pass
         
         # Changing field 'Subscription.group'
-        db.alter_column('subscription_subscription', 'group_id', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['auth.Group'], unique=True))
-
-        # Adding unique constraint on 'subscription', fields ['group']
-        db.create_unique('subscription_subscription', ['group_id'])
-
-
+        db.alter_column('subscription_subscription', 'group_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group']))
+        
+    def backwards(self, orm):
+        pass
+    
     models = {
         'auth.group': {
             'Meta': {'object_name': 'Group'},
